@@ -1,0 +1,20 @@
+{
+  "configurations": [
+    {
+      "name": "Launch",
+      "type": "lldb",
+      "request": "launch",
+      "program": "${workspaceFolder}/build/oxcc-cli",
+      "args": ["example/test.ts"],
+      "cwd": "${workspaceFolder}"
+    },
+    {
+      "name": "Debug run",
+      "type": "cppdbg",
+      "request": "launch",
+      "program": "${workspaceFolder}/build/oxcc-cli",
+      "args": ["example/test.ts"],
+      "cwd": "${workspaceFolder}"
+    }
+  ]
+}
