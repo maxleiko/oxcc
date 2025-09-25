@@ -17,52 +17,54 @@ pub enum Error {
     Transformer(Vec<OxcDiagnostic>),
 }
 
-pub fn transpile<P: AsRef<Path>>(
-    path: P,
-    allocator: &mut Allocator,
-) -> Result<CodegenReturn, Error> {
-    let path = path.as_ref();
-    let source_type = SourceType::from_path(path)?;
-    let source_text = std::fs::read_to_string(path)?;
+#[derive(Default)]
+pub struct Transpiler {
+    alloc: Allocator,
+}
 
-    allocator.reset();
-    let ret = Parser::new(allocator, &source_text, source_type).parse();
+impl Transpiler {
+    pub fn transpile<P: AsRef<Path>>(&mut self, path: P) -> Result<CodegenReturn, Error> {
+        self.alloc.reset();
 
-    if !ret.errors.is_empty() {
-        return Err(Error::Parse(ret.errors));
-    }
+        let path = path.as_ref();
+        let source_type = SourceType::from_path(path)?;
+        let source_text = std::fs::read_to_string(path)?;
 
-    let mut program = ret.program;
+        let ret = Parser::new(&self.alloc, &source_text, source_type).parse();
+        if !ret.errors.is_empty() {
+            return Err(Error::Parse(ret.errors));
+        }
 
-    let ret = SemanticBuilder::new()
-        // Estimate transformer will triple scopes, symbols, references
-        .with_excess_capacity(2.0)
-        .build(&program);
+        let mut program = ret.program;
 
-    if !ret.errors.is_empty() {
-        return Err(Error::Semantic(ret.errors));
-    }
+        let ret = SemanticBuilder::new()
+            // Estimate transformer will triple scopes, symbols, references
+            .with_excess_capacity(2.0)
+            .build(&program);
+        if !ret.errors.is_empty() {
+            return Err(Error::Semantic(ret.errors));
+        }
 
-    let scoping = ret.semantic.into_scoping();
-    let transform_options = TransformOptions {
-        typescript: TypeScriptOptions {
-            only_remove_type_imports: true,
-            allow_namespaces: true,
-            remove_class_fields_without_initializer: true,
-            rewrite_import_extensions: Some(oxc_transformer::RewriteExtensionsMode::Rewrite),
+        let scoping = ret.semantic.into_scoping();
+        let transform_options = TransformOptions {
+            typescript: TypeScriptOptions {
+                only_remove_type_imports: true,
+                allow_namespaces: true,
+                remove_class_fields_without_initializer: true,
+                rewrite_import_extensions: Some(oxc_transformer::RewriteExtensionsMode::Rewrite),
+                ..Default::default()
+            },
             ..Default::default()
-        },
-        ..Default::default()
-    };
+        };
 
-    let ret = Transformer::new(allocator, path, &transform_options)
-        .build_with_scoping(scoping, &mut program);
+        let ret = Transformer::new(&self.alloc, path, &transform_options)
+            .build_with_scoping(scoping, &mut program);
+        if !ret.errors.is_empty() {
+            return Err(Error::Transformer(ret.errors));
+        }
 
-    if !ret.errors.is_empty() {
-        return Err(Error::Transformer(ret.errors));
+        Ok(Codegen::new().build(&program))
     }
-
-    Ok(Codegen::new().build(&program))
 }
 
 impl From<io::Error> for Error {

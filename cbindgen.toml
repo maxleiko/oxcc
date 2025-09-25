@@ -21,7 +21,8 @@ prefix = "oxcc_"
 renaming_overrides_prefixing = false
 
 [export.rename]
-"TranspileResult" = "transpile_result"
+"Transpiler" = "transpiler"
+"Result" = "result"
 
 [export.mangle]
 rename_types = "SnakeCase"

@@ -12,16 +12,19 @@ int main(int argc, char *argv[]) {
   const char *filepath = argv[1];
   size_t filepath_len = strlen(filepath);
 
+  oxcc_transpiler *transpiler = oxcc_transpiler__new();
+
   const char *code;
   size_t code_len = 0;
-  oxcc_transpile_result res =
-      oxcc__transpile(filepath, filepath_len, &code, &code_len);
+  oxcc_result res = oxcc_transpiler__transpile(transpiler, filepath,
+                                               filepath_len, &code, &code_len);
   if (res != 0) {
     return 1;
   }
 
   printf("%.*s", (int)code_len, code);
-  oxcc__free(code);
+  oxcc_string__free(code);
+  oxcc_transpiler__free(transpiler);
 
   return 0;
 }

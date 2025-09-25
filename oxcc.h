@@ -11,29 +11,39 @@
 
 typedef enum {
     /// Success
-    oxcc_transpile_result_ok = 0,
+    oxcc_result_ok = 0,
     /// Provided arguments are not valid
-    oxcc_transpile_result_invalid,
+    oxcc_result_invalid,
     /// An error occurred with I/O
-    oxcc_transpile_result_io,
+    oxcc_result_io,
     /// Unable to parse the source
-    oxcc_transpile_result_parse,
+    oxcc_result_parse,
     /// Semantic issue with the source
-    oxcc_transpile_result_semantic,
+    oxcc_result_semantic,
     /// Unable to transpile the source
-    oxcc_transpile_result_transformer,
-} oxcc_transpile_result;
+    oxcc_result_transformer,
+} oxcc_result;
+
+typedef struct oxcc_transpiler oxcc_transpiler;
 
 /// # Safety
-/// Don't free the returned pointer with gnu malloc/free, instead use `oxcc_free`.
-/// Also the returned pointer can be NULL.
-oxcc_transpile_result oxcc__transpile(const char *path_ptr,
-                                      size_t path_len,
-                                      const char **output_ptr,
-                                      size_t *output_len);
+/// The returned pointer must be de-allocated with `oxcc_transpiler__free`
+oxcc_transpiler *oxcc_transpiler__new(void);
+
+/// # Safety
+/// The given pointer must be allocated with `oxcc_transpiler__new`
+void oxcc_transpiler__free(oxcc_transpiler *transpiler);
+
+/// # Safety
+/// `transpiler` must be allocated using `oxcc_transpiler__new`
+oxcc_result oxcc_transpiler__transpile(oxcc_transpiler *transpiler,
+                                       const char *path_ptr,
+                                       size_t path_len,
+                                       const char **output_ptr,
+                                       size_t *output_len);
 
 /// # Safety
 /// Make sure you pass in a pointer to a string allocated by `demo_transpile`
-void oxcc__free(const char *input);
+void oxcc_string__free(const char *input);
 
 #endif  /* OXC_TRANSFORMER_H */
